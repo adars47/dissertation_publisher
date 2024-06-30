@@ -9,3 +9,5 @@
 ###< symfony/framework-bundle ###
 /tmp/*
 /compose/*
+.env
+.idea
