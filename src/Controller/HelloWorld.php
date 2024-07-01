@@ -5,10 +5,14 @@ use App\Kernel;
 use Cloutier\PhpIpfsApi\IPFS;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
 use Web3\Eth;
+use Web3\Net;
+use Web3\Utils;
+use Web3\Web3;
 
 
 class HelloWorld extends AbstractController
@@ -35,6 +39,8 @@ class HelloWorld extends AbstractController
         $patient_pub = $request->get('patient_pub_k',null);
         $doctor_pub = $request->get('doctor_pub_k',null);
         $doctor_private = $request->get('doctor_pri_k',null);
+        $doctorAccount = $request->get('doctor_account',null);
+        $patientAccount = $request->get('patient_account',null);
 
         $base_folder = dirname(__DIR__)."/../tmp/".$patient_pub;
         /**
@@ -51,29 +57,31 @@ class HelloWorld extends AbstractController
         $output = explode(PHP_EOL,$output);
         $hash = $output[count($output)-2];
         $actualHash = explode(" ",$hash);
-        echo($actualHash[1]);
-        die;
+        $fileLocation = $actualHash[1];
+
+        $response = new JsonResponse();
+        $response->setStatusCode(200);
+        $this->publishToBlockchain($doctorAccount,$patientAccount,$fileLocation,$response);
+        return $response;
     }
 
-    #[Route('/pub')]
-    public function publish()
+    private function publishToBlockchain($from,$to,$hash, $response)
     {
-        $eth = new Eth("http://127.0.0.1:7545");
-        var_dump($eth->eth_accounts());die;
+        $eth = new Eth("http://host.docker.internal:7545");
 
-        $fromAccount = "0x76F75F637C7eEFe2b0294F22a0a957C990412bb4";
-        $toAccount = "0x7D378c0c7D5E046Fc1e9b95d5d4411FC4E6424f4";
+        $fromAccount = $from;
+        $toAccount = $to;
         $eth->sendTransaction([
             'from' => $fromAccount,
             'to' => $toAccount,
             'value' => '0x1',
-            'data' => '0x'.bin2hex("QmPDmLxkf2T1tErgEy5SnskGcTBRE4BeiyKMHpToihcffw")
-        ], function ($err, $transaction) use ($eth, $fromAccount, $toAccount) {
+            'data' => '0x'.bin2hex($hash)
+        ], function ($err, $transaction) use ($eth, $fromAccount, $toAccount, $response) {
             if ($err !== null) {
                 echo 'Error: ' . $err->getMessage();
                 return;
             }
-            echo 'Tx hash: ' . $transaction . PHP_EOL;
+            $response->setContent($transaction);
         });
     }
 }
