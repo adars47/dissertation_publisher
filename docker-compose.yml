@@ -126,3 +126,15 @@ services:
       - ./:/var/www/backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  ui:
+    container_name: ui
+    image: ubuntu/apache2
+    build:
+      context: ./Infastructure/ui
+    ports:
+      - "2223:2223"
+    volumes:
+      - ./UI/:/var/www/html
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
