@@ -1,22 +1,20 @@
 <?php
 
 namespace App\Controller;
-use App\Kernel;
+
 use Cloutier\PhpIpfsApi\IPFS;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
 use Web3\Eth;
-use Web3\Net;
-use Web3\Utils;
-use Web3\Web3;
 
 
 class HelloWorld extends AbstractController
 {
+    private $files = [];
     #[Route('/ada')]
     public function upload()
     {
@@ -32,15 +30,85 @@ class HelloWorld extends AbstractController
 
     }
 
+    #[Route('/getFile', methods: ['POST'])]
+    public function getFile(Request $request)
+    {
+        $response = new JsonResponse();
+        $json = json_decode($request->getContent(),true);
+        if($json === null || !isset($json['filePath']))
+        {
+            $response->setStatusCode(404);
+            return $response;
+        }
+        $filepath = $json['filePath'];
+        if(!file_exists($filepath))
+        {
+            $response->setStatusCode(404);
+            return $response;
+        }
+        return new BinaryFileResponse($filepath);
+    }
+
+    #[Route('/getFilePath')]
+    public function getFilePath(Request $request)
+    {
+        header("Access-Control-Expose-Headers: X-Signed-Enc-Key");
+        $response = new JsonResponse();
+        try {
+            $tmpir = time();
+            $filepath = $request->query->get('filepath');
+            if($filepath === null || $filepath === "")
+            {
+                $response = new JsonResponse();
+                $response->setStatusCode(400);
+                return $response;
+            }
+            $filepath = hex2bin($filepath);
+            $decoded = json_decode($filepath,true);
+            $filepath = $decoded['hash'];
+            $signedEncKey = $decoded['signedEncryptionKey'];
+            $base_folder = dirname(__DIR__)."/../tmp/".$tmpir;
+            $command = sprintf("mkdir %s && cd %s && ipfs get %s --api /dns4/ipfs0/tcp/5001",$base_folder,$base_folder,$filepath);
+            $output = shell_exec($command);
+            $filescan = scandir($base_folder);
+            $mainfolder = $base_folder."/".$filescan[2];
+            $this->map_recursively($mainfolder);
+            $response->setStatusCode(200);
+            $response->headers->set('X-SIGNED-ENC-KEY', $signedEncKey);
+            $response->setContent(json_encode($this->files));
+            return $response;
+        }
+        catch (\Exception $exception)
+        {
+            $response->setStatusCode(500);
+            return $response;
+        }
+    }
+
+    private function map_recursively($currentDir)
+    {
+        if (is_dir($currentDir)) {
+
+            $files = glob($currentDir . '*', GLOB_MARK); //GLOB_MARK adds a slash to directories returned
+
+            foreach ($files as $file) {
+                $this->map_recursively($file);
+            }
+
+        } elseif (is_file($currentDir)) {
+            $this->files[] = $currentDir;
+        }
+    }
+
     #[Route('/submit', methods: ['POST'])]
     public function submit(Request $request)
     {
-        header('Access-Control-Allow-Origin: *');
         $patient_pub = $request->get('patient_pub_k',null);
         $doctor_pub = $request->get('doctor_pub_k',null);
         $doctor_private = $request->get('doctor_pri_k',null);
         $doctorAccount = $request->get('doctor_account',null);
         $patientAccount = $request->get('patient_account',null);
+        $signedEncryptionKey = $request->get('signed_encryption_key',null);
 
         $base_folder = dirname(__DIR__)."/../tmp/".$patient_pub;
         /**
@@ -61,11 +129,11 @@ class HelloWorld extends AbstractController
 
         $response = new JsonResponse();
         $response->setStatusCode(200);
-        $this->publishToBlockchain($doctorAccount,$patientAccount,$fileLocation,$response);
+        $this->publishToBlockchain($doctorAccount,$patientAccount,$fileLocation,$signedEncryptionKey,$response);
         return $response;
     }
 
-    private function publishToBlockchain($from,$to,$hash, $response)
+    private function publishToBlockchain($from,$to,$hash, $signedEncryptionKey, $response)
     {
         $eth = new Eth("http://host.docker.internal:7545");
 
@@ -75,7 +143,7 @@ class HelloWorld extends AbstractController
             'from' => $fromAccount,
             'to' => $toAccount,
             'value' => '0x1',
-            'data' => '0x'.bin2hex($hash)
+            'data' => '0x'.bin2hex(json_encode(["hash"=>$hash,'signedEncryptionKey'=>$signedEncryptionKey]))
         ], function ($err, $transaction) use ($eth, $fromAccount, $toAccount, $response) {
             if ($err !== null) {
                 echo 'Error: ' . $err->getMessage();
