@@ -13,7 +13,7 @@ const WebComponent = (props) => {
     const getFilePath = (transaction_data,decryption_key) => {
     
         let transaction_data_mod = transaction_data.replace("0x","");
-        fetch('http://127.0.0.1:2222/getFilePath?filepath='+transaction_data_mod)
+        fetch('http://backend.local/getFilePath?filepath='+transaction_data_mod)
         .then(async (response) => {
             decryption_key = await EthCrypto.decryptWithPrivateKey(decryption_key,response.headers.get('X-Signed-Enc-Key'))
             return response.json()

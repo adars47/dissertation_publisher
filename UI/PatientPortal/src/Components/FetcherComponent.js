@@ -1,7 +1,7 @@
 import decryptAndDownload from "../Components/Decrypt";
 
 const getFiles= (filepath,decryption_key) => {
-    fetch('http://127.0.0.1:2222/getFile',{
+    fetch('http://backend.local/getFile',{
         method: "POST",
         body: JSON.stringify({filePath:filepath})
     })
