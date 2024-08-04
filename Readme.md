@@ -1,5 +1,15 @@
-$fromAccount = "0x76F75F637C7eEFe2b0294F22a0a957C990412bb4";
-$toAccount = "0x7D378c0c7D5E046Fc1e9b95d5d4411FC4E6424f4";
+#####
+
+To run this project you need the following:
+
+1) Ganache
+
+2) Add the following to your local hosts file
+
+127.0.0.1       patient.local
+127.0.0.1       backend.local
+127.0.0.1       publisher.local
+
 
 Accounts and pk and pubk for local accounts
 

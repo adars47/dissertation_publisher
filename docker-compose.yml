@@ -121,20 +121,32 @@ services:
     image: adars47/health_vault_backend:latest
     tty: true
     ports:
-      - "2222:2222"
+      - "80:80"
     volumes:
       - ./:/var/www/backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  ui:
-    container_name: ui
-    image: ubuntu/apache2
-    build:
-      context: ./Infastructure/ui
-    ports:
-      - "2223:2223"
-    volumes:
-      - ./UI/:/var/www/html
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+#  ui:
+#    container_name: ui
+#    image: ubuntu/apache2
+#    build:
+#      context: ./Infastructure/ui
+#    ports:
+#      - "2223:2223"
+#    volumes:
+#      - ./UI/PublisherPortal:/var/www/html
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#
+#  patient:
+#    container_name: patientPortal
+#    image: ubuntu/apache2
+#    build:
+#      context: ./Infastructure/ui
+#    ports:
+#      - "2223:2223"
+#    volumes:
+#      - ./UI/PublisherPortal:/var/www/html
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
