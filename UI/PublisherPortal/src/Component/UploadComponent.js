@@ -53,7 +53,7 @@ const startUpload = async () => {
     formData.append("doctor_pub_k",credentials.publicKey);
     formData.append("patient_account",credentials.accountNumber);
     formData.append("doctor_pri_k",credentials.privateKey);
-    let url = "http://backend:2222/submit";
+    let url = "http://backend.local/submit";
 
     let signed_encryption_key = await EthCrypto.encryptWithPublicKey(props.patient.publicKey,random_password);
     const encryptedString = EthCrypto.cipher.stringify(signed_encryption_key);
